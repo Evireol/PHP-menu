@@ -44,7 +44,7 @@ function display_groups() {
         foreach ($groups as $row)
         {
           // echo "<ul>";
-          echo "<li margin-bottom='0'><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>";
+          echo "<li><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>";
         }
       }
     
@@ -115,28 +115,43 @@ function get_older_parent_groups($id)
     $groups[] = $row;
   }
   $groups_up = array();
+
+
+//начало проверки с возможным входом в рекурсию
+
+  $groups_up = recursion_older_parent_groups($id,  $groups_up, $groups);
+
+  return array_reverse($groups_up);
+  
+}
+
+function recursion_older_parent_groups($id, $groups_up, $groups) 
+{
   $id_parent_element_id = '0';
 
   foreach ($groups as $groups_row)
   {
 
+    //поиск id_parent у id
       if ($groups_row['id'] == $id)
       {
         $id_parent_element_id = $groups_row['id_parent'];
       }
   }
 
+  //добавление в массив элемента id_parent
   foreach ($groups as $groups_row)
-  {
-
+  {                                                                                                                                                                       
       if ($groups_row['id'] == $id_parent_element_id)
       {
         $groups_up[] = $groups_row;
       }
   }
-
+  if($id_parent_element_id > 0)
+  {
+    $groups_up = recursion_older_parent_groups($id_parent_element_id, $groups_up, $groups);
+  }
   return $groups_up;
-  
 }
 
 function get_parent_groups($id) 
