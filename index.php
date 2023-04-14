@@ -24,11 +24,14 @@
 
 
 
+<!-- <li>&bull; Элемент 1</li> -->
 
 
 
 
 <?php
+
+
 function display_groups() {
 
   if (isset($_GET['id'])) 
@@ -40,14 +43,38 @@ function display_groups() {
     $amount_begin_elements = get_amount_begin_elements_groups();
     if ($id > $amount_begin_elements)
       {
-        $groups = get_older_parent_groups($id);
+        $groups = get_up_older_parent_groups($id);
+
         foreach ($groups as $row)
         {
-          // echo "<ul>";
-          echo "<li><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>";
+          $older_sibling= get_up_sibling_older($row['id']);
+
+            echo "<ul>";
+
+          if(isset($older_sibling))
+          {
+            foreach ($older_sibling as $row_sibling)
+            {
+              // echo "<ul>";
+              echo "<li><a href='index.php?id=" . $row_sibling['id'] . "'>       ". $row_sibling['name'] . "</a>";
+            }
+          }
+          echo "<li> <a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>";
         }
       }
     
+    echo "<ul>";
+    
+    // $sibling_parent = sibling_parent();
+    $groups = get_up_sibling_parent($id);
+    if(isset($groups) and $id > $amount_begin_elements)
+    {
+      foreach ($groups as $row)
+      {
+        // echo "<ul>";
+        echo "<li margin-bottom='0'><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>";
+      }
+    }
 
     $groups = get_parent_groups($id);
     foreach ($groups as $row)
@@ -57,11 +84,46 @@ function display_groups() {
     }
     // echo "<ul>";
 
+ 
+    echo "<ul>";
+
     $groups = get_child_groups($id);
     foreach ($groups as $row)
     {
       echo "<li><a href='index.php?id=" . $row['id'] . "'>" . $row['name'] . "</a>";
     }
+    echo "</ul>";
+    $groups = get_down_sibling_parent($id);
+    if(isset($groups) and $id > $amount_begin_elements)
+    {
+      foreach ($groups as $row)
+      {
+        // echo "<ul>";
+        echo "<li margin-bottom='0'><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>";
+      }
+    }
+    echo "</ul>";
+
+    if ($id > $amount_begin_elements)
+    {
+      $groups = get_up_older_parent_groups($id);
+
+      foreach (array_reverse($groups) as $row)
+      {
+        $younger_sibling= get_down_sibling_older($row['id']);
+        if(isset($younger_sibling))
+        {
+          foreach ($younger_sibling as $row_sibling)
+          {
+            // echo "<ul>";
+            echo "<li><a href='index.php?id=" . $row_sibling['id'] . "'>       ". $row_sibling['name'] . "</a>";
+          }
+        }
+        echo "</ul>";
+      }
+    }
+
+
   } 
   else 
   {
@@ -75,6 +137,8 @@ function display_groups() {
     // echo "</ul>";
   }
 }
+
+
 
 function get_amount_begin_elements_groups() 
 {
@@ -102,9 +166,9 @@ function get_amount_begin_elements_groups()
   return $id ;
 }
 
-function get_older_parent_groups($id) 
+//Получение всех родителей, прародителй и т.д., кроме первого элемента группы
+function get_up_older_parent_groups($id) 
 {
-
   $id = $_GET['id'];
   $db = new mysqli('localhost', 'root', '', 'z1');
   $result = mysqli_query($db, "SELECT * FROM `groups`");
@@ -147,11 +211,172 @@ function recursion_older_parent_groups($id, $groups_up, $groups)
         $groups_up[] = $groups_row;
       }
   }
+
+  
+
   if($id_parent_element_id > 0)
   {
     $groups_up = recursion_older_parent_groups($id_parent_element_id, $groups_up, $groups);
   }
   return $groups_up;
+}
+
+function get_up_sibling_older($id) 
+{
+  $db = new mysqli('localhost', 'root', '', 'z1');
+  $result = mysqli_query($db, "SELECT * FROM `groups`");
+  $db->close();
+  
+  $groups = array();
+  $id_parent_element_id = '0';
+
+  while ($row = mysqli_fetch_assoc($result)) 
+  {
+    $groups[] = $row;
+  }
+
+  foreach ($groups as $groups_row)
+  {
+     //поиск id_parent у id
+     if ($groups_row['id'] == $id)
+     {
+       $id_parent_element_id = $groups_row['id_parent'];
+     }
+  }
+
+ //добавление в массив элемента с аналогичным id_parent но меньшим id
+ foreach ($groups as $groups_row)
+ {                                                                                                                                                                       
+     if ($groups_row['id_parent'] == $id_parent_element_id and $groups_row['id'] != $id and $groups_row['id'] < $id)
+     {
+       $groups_up[] = $groups_row;
+     }
+ }
+
+ if(isset($groups_up))
+ {
+    return $groups_up;
+ }
+ return;
+}
+
+function get_down_sibling_older($id) 
+{
+  $db = new mysqli('localhost', 'root', '', 'z1');
+  $result = mysqli_query($db, "SELECT * FROM `groups`");
+  $db->close();
+  
+  $groups = array();
+  $id_parent_element_id = '0';
+
+  while ($row = mysqli_fetch_assoc($result)) 
+  {
+    $groups[] = $row;
+  }
+
+  foreach ($groups as $groups_row)
+  {
+     //поиск id_parent у id
+     if ($groups_row['id'] == $id)
+     {
+       $id_parent_element_id = $groups_row['id_parent'];
+     }
+  }
+
+ //добавление в массив элемента с аналогичным id_parent но больший id
+ foreach ($groups as $groups_row)
+ {                                                                                                                                                                       
+     if ($groups_row['id_parent'] == $id_parent_element_id and $groups_row['id'] != $id and $groups_row['id'] > $id)
+     {
+       $groups_up[] = $groups_row;
+     }
+ }
+
+ if(isset($groups_up))
+ {
+    return $groups_up;
+ }
+ return;
+}
+
+function get_up_sibling_parent($id) 
+{
+  $id = $_GET['id'];
+  $db = new mysqli('localhost', 'root', '', 'z1');
+  $result = mysqli_query($db, "SELECT * FROM `groups`");
+  $db->close();
+  
+  $groups = array();
+  $id_parent_element_id = '0';
+
+  while ($row = mysqli_fetch_assoc($result)) 
+  {
+    $groups[] = $row;
+  }
+
+  foreach ($groups as $groups_row)
+  {
+     //поиск id_parent у id
+     if ($groups_row['id'] == $id)
+     {
+       $id_parent_element_id = $groups_row['id_parent'];
+     }
+ }
+
+ //добавление в массив элемента с аналогичным id_parent но меньшим id
+ foreach ($groups as $groups_row)
+ {                                                                                                                                                                       
+     if ($groups_row['id_parent'] == $id_parent_element_id and $groups_row['id'] != $id and $groups_row['id'] < $id)
+     {
+       $groups_up[] = $groups_row;
+     }
+ }
+
+ if(isset($groups_up))
+ {
+    return $groups_up;
+ }
+ return;
+}
+
+function get_down_sibling_parent($id) 
+{
+  $id = $_GET['id'];
+  $db = new mysqli('localhost', 'root', '', 'z1');
+  $result = mysqli_query($db, "SELECT * FROM `groups`");
+  $db->close();
+  
+  $groups = array();
+  $id_parent_element_id = '0';
+
+  while ($row = mysqli_fetch_assoc($result)) 
+  {
+    $groups[] = $row;
+  }
+
+  foreach ($groups as $groups_row)
+  {
+     //поиск id_parent у id
+     if ($groups_row['id'] == $id)
+     {
+       $id_parent_element_id = $groups_row['id_parent'];
+     }
+ }
+
+ //добавление в массив элемента с аналогичным id_parent но больший id
+ foreach ($groups as $groups_row)
+ {                                                                                                                                                                       
+     if ($groups_row['id_parent'] == $id_parent_element_id and $groups_row['id'] != $id and $groups_row['id'] > $id)
+     {
+       $groups_down[] = $groups_row;
+     }
+ }
+
+ if(isset($groups_down))
+ {
+    return $groups_down;
+ }
+ return;
 }
 
 function get_parent_groups($id) 
@@ -181,6 +406,8 @@ function get_parent_groups($id)
   return $groups_down;
   
 }
+
+
 
 function get_child_groups($id) 
 {
@@ -221,20 +448,6 @@ function get_child_groups($id)
 
 
 
-
-
-
-
-
-
-
-
- 
-
-
-
-
-
 function get_top_level_groups() {
   //Строка подлкючения к базе
   $db = new mysqli('localhost', 'root', '', 'z1');
@@ -249,36 +462,15 @@ function get_top_level_groups() {
   return $groups;
 }
 
-// function get_mother_groups($id) {
-//   //Строка подлкючения к базе
-//   $db = new mysqli('localhost', 'root', '', 'z1');
-//   $result = mysqli_query($db, "SELECT * FROM `groups`");
-//   //Закрываем поключение к базе
-//   $db->close();
-//   $groups_for_return = array();
-//   $parent_id = $id;
 
-//   $groups = array();
-//   while ($row = mysqli_fetch_assoc($result)) 
-//   {
-//     $groups[] = $row;
-//   }
 
-//   while ($parent_id != 0)
-//   {
-//     foreach ($groups as $row)
-//     {
-//       if($parent_id == $row['id'])
-//       {
-//         $groups_for_return[] = $row;
-//         $parent_id = $row['id_parent'];
-//         break;
-//       }
-//     }
-//   }
-//    $groups_for_return = array_reverse($groups_for_return);
-//   return $groups_for_return;
-// }
+
+
+
+
+
+
+
 
 function display_all_products()
 {
@@ -389,4 +581,3 @@ function get_child_products($db, $id, $products, $all_products, $all_groups)
     return $products;
 }
 ?>
- 
