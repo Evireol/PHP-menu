@@ -21,16 +21,7 @@
 </html>
 
 
-
-
-
-<!-- <li>&bull; Элемент 1</li> -->
-
-
-
-
 <?php
-
 
 function display_groups() {
 
@@ -38,12 +29,12 @@ function display_groups() {
   {
     //Если есть, отобразить подгруппы
     $id = $_GET['id'];
-    // $groups = get_mother_groups($id);
 
     $amount_begin_elements = get_amount_begin_elements_groups();
     if ($id > $amount_begin_elements)
       {
         $groups = get_up_older_parent_groups($id);
+        $count_child = get_count($id);
 
         foreach ($groups as $row)
         {
@@ -55,11 +46,10 @@ function display_groups() {
           {
             foreach ($older_sibling as $row_sibling)
             {
-              // echo "<ul>";
-              echo "<li><a href='index.php?id=" . $row_sibling['id'] . "'>       ". $row_sibling['name'] . "</a>";
+              echo "<li><a href='index.php?id=" . $row_sibling['id'] . "'>       ". $row_sibling['name'] . "</a>  " . get_count($row_sibling['id']);
             }
           }
-          echo "<li> <a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>";
+          echo "<li> <a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>  ". get_count($row['id']);
         }
       }
     
@@ -67,46 +57,45 @@ function display_groups() {
     
     // $sibling_parent = sibling_parent();
     $groups = get_up_sibling_parent($id);
+    $count_child = get_count($id);
     if(isset($groups) and $id > $amount_begin_elements)
     {
       foreach ($groups as $row)
       {
-        // echo "<ul>";
-        echo "<li margin-bottom='0'><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>";
+        echo "<li margin-bottom='0'><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>  " . get_count($row['id']);
       }
     }
 
     $groups = get_parent_groups($id);
+    $count_child = get_count($id);
     foreach ($groups as $row)
     {
-      // echo "<ul>";
-      echo "<li margin-bottom='0'><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>";
+      echo "<li margin-bottom='0'><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a> ". $count_child;
     }
-    // echo "<ul>";
 
- 
     echo "<ul>";
 
     $groups = get_child_groups($id);
+    $count_child = get_count($id);
     foreach ($groups as $row)
     {
-      echo "<li><a href='index.php?id=" . $row['id'] . "'>" . $row['name'] . "</a>";
+      echo "<li><a href='index.php?id=" . $row['id'] . "'>" . $row['name'] . "</a>  " . get_count($row['id']);
     }
     echo "</ul>";
+
     $groups = get_down_sibling_parent($id);
-    if(isset($groups) and $id > $amount_begin_elements)
-    {
+    $count_child = get_count($id);
+
       foreach ($groups as $row)
       {
-        // echo "<ul>";
-        echo "<li margin-bottom='0'><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>";
+        echo "<li margin-bottom='0'><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>  " . get_count($row['id']);
       }
-    }
     echo "</ul>";
 
     if ($id > $amount_begin_elements)
     {
       $groups = get_up_older_parent_groups($id);
+      $count_child = get_count($id);
 
       foreach (array_reverse($groups) as $row)
       {
@@ -116,7 +105,7 @@ function display_groups() {
           foreach ($younger_sibling as $row_sibling)
           {
             // echo "<ul>";
-            echo "<li><a href='index.php?id=" . $row_sibling['id'] . "'>       ". $row_sibling['name'] . "</a>";
+            echo "<li><a href='index.php?id=" . $row_sibling['id'] . "'>       ". $row_sibling['name'] . "</a>  " . get_count($row_sibling['id']);
           }
         }
         echo "</ul>";
@@ -132,9 +121,8 @@ function display_groups() {
     // echo "<ul>";
     foreach ($groups as $row)
     {
-      echo "<li><a href='index.php?id=" . $row['id'] . "'>" . $row['name'] . "</a></li>";
+      echo "<li><a href='index.php?id=" . $row['id'] . "'>" . $row['name'] . "</a>  ". get_count($row['id'])."</li>";
     }
-    // echo "</ul>";
   }
 }
 
@@ -442,12 +430,6 @@ function get_child_groups($id)
 
 
 
-
-
-
-
-
-
 function get_top_level_groups() {
   //Строка подлкючения к базе
   $db = new mysqli('localhost', 'root', '', 'z1');
@@ -470,6 +452,56 @@ function get_top_level_groups() {
 
 
 
+//id_group=$id
+function get_count($id)
+{
+  $db = new mysqli('localhost', 'root', '', 'z1');
+
+  $count=0;
+
+  //Получяение всей(id, id_parent, name) таблицы группы
+  $result = mysqli_query($db, "SELECT * FROM `groups`");
+  $all_groups = array();
+  //Разбиение массива на строки с элементами
+  while ($all_groups_row = mysqli_fetch_assoc($result)) 
+  {
+    $all_groups[] = $all_groups_row;
+  }    
+
+  $count =  get_child_count($db, $id, $count, $all_groups);
+  $db->close();
+
+  return $count;
+}
+
+function get_child_count($db, $id, $count, $all_groups)
+{
+ 
+    $result = mysqli_query($db, "SELECT COUNT(*) as count  FROM `products` where id_group = $id");
+    $row = $result->fetch_assoc();
+    $count = $count + $row['count'];
+    //echo $count . "! ";
+    foreach ($all_groups as $all_groups_row)
+    {
+      if($all_groups_row['id_parent'] == $id)
+      {
+        $count = get_child_count($db, $all_groups_row['id'], $count, $all_groups);
+      }
+    }
+    return $count;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 function display_all_products()
@@ -482,18 +514,7 @@ function display_all_products()
   }
   echo "</table>";  
 
-
-  //Пример рекурсии
-  function factorial($n) 
-  {
-   if ($n <= 1) return 1; 
-   return $n * factorial($n - 1); // здесь происходит повторный вызов функции 
-  } 
-   
-  echo factorial(5); // 120
-
 }
-
 
 function get_products() {
   //Строка подлкючения к базе
@@ -539,6 +560,7 @@ function get_products() {
       $products[] = $row;
     }
   }
+
   //Закрываем поключение к базе
   $db->close();
   return $products;
