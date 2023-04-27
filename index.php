@@ -34,7 +34,6 @@ function display_groups() {
     if ($id > $amount_begin_elements)
       {
         $groups = get_up_older_parent_groups($id);
-        $count_child = get_count($id);
 
         foreach ($groups as $row)
         {
@@ -57,7 +56,6 @@ function display_groups() {
     
     // $sibling_parent = sibling_parent();
     $groups = get_up_sibling_parent($id);
-    $count_child = get_count($id);
     if(isset($groups) and $id > $amount_begin_elements)
     {
       foreach ($groups as $row)
@@ -67,35 +65,36 @@ function display_groups() {
     }
 
     $groups = get_parent_groups($id);
-    $count_child = get_count($id);
     foreach ($groups as $row)
     {
-      echo "<li margin-bottom='0'><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a> ". $count_child;
+      echo "<li margin-bottom='0'><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a> ". get_count($row['id']);
     }
 
     echo "<ul>";
 
     $groups = get_child_groups($id);
-    $count_child = get_count($id);
-    foreach ($groups as $row)
-    {
-      echo "<li><a href='index.php?id=" . $row['id'] . "'>" . $row['name'] . "</a>  " . get_count($row['id']);
-    }
-    echo "</ul>";
+
+      foreach ($groups as $row)
+      {
+        echo "<li><a href='index.php?id=" . $row['id'] . "'>" . $row['name'] . "</a>  " . get_count($row['id']);
+      }
+      echo "</ul>";
+
 
     $groups = get_down_sibling_parent($id);
-    $count_child = get_count($id);
 
+    if(isset($groups ))
+    {
       foreach ($groups as $row)
       {
         echo "<li margin-bottom='0'><a href='index.php?id=" . $row['id'] . "'>       ". $row['name'] . "</a>  " . get_count($row['id']);
       }
     echo "</ul>";
+    }
 
     if ($id > $amount_begin_elements)
     {
       $groups = get_up_older_parent_groups($id);
-      $count_child = get_count($id);
 
       foreach (array_reverse($groups) as $row)
       {
@@ -421,6 +420,10 @@ function get_child_groups($id)
       }
   }
 
+  if(isset($groups_down))
+  {
+     return $groups_down;
+  }
   return $groups_down;
   
 }
